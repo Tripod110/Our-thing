@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#e8b4bc">
+<title>Our Thing</title>
+<style>
+  :root{
+    --bg:#fdf6f0; --card:#ffffff; --ink:#3a2e2c; --sub:#8a7a76;
+    --accent:#e0637a; --accent2:#f2a5b3; --line:#eee0da; --shadow:0 6px 20px rgba(58,46,44,.08);
+    --radius:18px;
+  }
+  [data-theme="vhs"]{ --bg:#100e1a; --card:#1c1830; --ink:#f1e9ff; --sub:#a79cd6; --accent:#ff2f92; --accent2:#00e5ff; --line:#332a55; --shadow:0 0 20px rgba(255,47,146,.25); }
+  [data-theme="postcard"]{ --bg:#f4ecd8; --card:#fffdf6; --ink:#3d3225; --sub:#8a7a5c; --accent:#c1673b; --accent2:#7c9473; --line:#e3d5b4; --shadow:0 6px 18px rgba(61,50,37,.1); }
+  [data-theme="scrapbook"]{ --bg:#efe6e0; --card:#fffaf5; --ink:#4a3b36; --sub:#9c847b; --accent:#a8555f; --accent2:#d9a441; --line:#e6d6cb; --shadow:0 8px 16px rgba(74,59,54,.12); }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    min-height:100vh; padding-bottom:env(safe-area-inset-bottom);
+    transition:background .3s,color .3s;
+  }
+  h1,h2,h3{margin:0 0 4px;}
+  p{margin:0 0 8px; color:var(--sub); line-height:1.4;}
+  button{font-family:inherit; cursor:pointer;}
+  input,textarea,select{font-family:inherit; font-size:16px;}
+
+  .hidden{display:none !important;}
+  .center-screen{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
+
+  /* Buttons */
+  .btn{ background:var(--accent); color:#fff; border:none; border-radius:14px; padding:14px 22px; font-size:16px; font-weight:600; box-shadow:var(--shadow); }
+  .btn:active{transform:scale(.97);}
+  .btn.secondary{background:transparent; color:var(--accent); border:2px solid var(--accent);}
+  .btn.ghost{background:transparent; color:var(--sub); border:none; box-shadow:none; text-decoration:underline;}
+  .btn-block{width:100%;}
+
+  /* Quiz */
+  #quizOverlay{position:fixed; inset:0; background:var(--bg); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px;}
+  .quiz-card{background:var(--card); border-radius:24px; box-shadow:var(--shadow); padding:28px 24px; max-width:420px; width:100%;}
+  .quiz-progress{display:flex; gap:6px; margin-bottom:18px;}
+  .quiz-progress span{flex:1; height:5px; border-radius:3px; background:var(--line);}
+  .quiz-progress span.done{background:var(--accent);}
+  .quiz-opt{display:block; width:100%; text-align:left; background:var(--bg); border:2px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:10px; font-size:16px; color:var(--ink);}
+  .quiz-opt:active{border-color:var(--accent);}
+  .quiz-opt.wrong{border-color:#d94848; background:#fdeaea;}
+  .quiz-opt.correct{border-color:#4caf7d; background:#e9f7ef;}
+  textarea.quiz-free{width:100%; min-height:110px; border:2px solid var(--line); border-radius:14px; padding:12px; resize:vertical;}
+
+  #lockoutOverlay{position:fixed; inset:0; background:#1a0303; color:#ffb3b3; z-index:200; display:flex; align-items:center; justify-content:center; text-align:center; padding:24px; animation:flash .4s ease-in-out 2;}
+  @keyframes flash{0%,100%{background:#1a0303;}50%{background:#4a0808;}}
+  #lockoutOverlay h1{font-size:34px; letter-spacing:1px;}
+
+  /* Name picker */
+  #nameOverlay{position:fixed; inset:0; background:var(--bg); z-index:90; display:flex; align-items:center; justify-content:center; padding:24px;}
+  .name-choice{display:flex; gap:16px; margin-top:20px;}
+  .name-choice button{flex:1; padding:26px 10px; border-radius:18px; border:2px solid var(--line); background:var(--card); font-size:18px; font-weight:700; color:var(--ink); box-shadow:var(--shadow);}
+  .name-choice button:active{border-color:var(--accent);}
+
+  /* App shell */
+  header.topbar{position:sticky; top:0; background:var(--bg); z-index:10; padding:16px 16px 8px; border-bottom:1px solid var(--line);}
+  header.topbar h1{font-size:22px;}
+  header.topbar .sub{font-size:13px; margin:0;}
+  main{padding:16px; max-width:640px; margin:0 auto;}
+  nav.tabs{display:flex; overflow-x:auto; gap:6px; padding:10px 16px; background:var(--bg); position:sticky; top:0; z-index:9; border-bottom:1px solid var(--line);}
+  nav.tabs button{white-space:nowrap; background:transparent; border:none; padding:8px 14px; border-radius:20px; color:var(--sub); font-size:14px; font-weight:600;}
+  nav.tabs button.active{background:var(--accent); color:#fff;}
+
+  .card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; margin-bottom:14px;}
+  .row{display:flex; gap:10px; align-items:center;}
+  .row-between{display:flex; justify-content:space-between; align-items:center;}
+
+  /* Thumbnail cards for watchlist/recipes */
+  .thumb-card{display:flex; gap:12px; background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:10px; margin-bottom:12px;}
+  .thumb-card img.thumb{width:64px; height:96px; object-fit:cover; border-radius:10px; background:var(--line); flex-shrink:0;}
+  .thumb-card .thumb-ph{width:64px; height:96px; border-radius:10px; background:var(--line); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;}
+  .thumb-body{flex:1; min-width:0;}
+  .thumb-body h3{font-size:16px;}
+  .rating-row{display:flex; gap:14px; font-size:13px; margin-top:6px; flex-wrap:wrap;}
+  .rating-pill{background:var(--bg); border-radius:10px; padding:4px 8px;}
+  .clash{color:#d94848; font-weight:700;}
+
+  .add-form{display:flex; flex-direction:column; gap:8px;}
+  .add-form input, .add-form textarea{border:2px solid var(--line); border-radius:12px; padding:10px 12px; background:var(--bg); color:var(--ink);}
+  .field-label{font-size:12px; color:var(--sub); margin-top:4px;}
+
+  .empty-state{text-align:center; padding:30px 10px; color:var(--sub);}
+
+  .rating-input{display:flex; align-items:center; gap:8px; margin-top:8px;}
+  .rating-input input[type=range]{flex:1;}
+
+  footer.theme-picker{display:flex; justify-content:center; gap:10px; padding:20px; }
+  .swatch{width:26px; height:26px; border-radius:50%; border:2px solid var(--line); cursor:pointer;}
+  .swatch.active{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .badge{display:inline-block; font-size:11px; background:var(--accent2); color:#fff; border-radius:8px; padding:2px 8px; margin-left:6px;}
+  .banner{background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border-radius:16px; padding:16px; margin-bottom:14px;}
+  .banner p{color:rgba(255,255,255,.9);}
+  .del-btn{background:none; border:none; color:var(--sub); font-size:13px; text-decoration:underline; padding:4px 0;}
+  .link-preview{display:flex; gap:10px; align-items:center; background:var(--bg); border-radius:10px; padding:8px; margin-top:6px;}
+  .link-preview img{width:44px; height:44px; object-fit:cover; border-radius:8px;}
+</style>
+</head>
+<body>
+
+<!-- ===== LOCKOUT (joke) ===== -->
+<div id="lockoutOverlay" class="hidden">
+  <div>
+    <h1>ACCESS DENIED</h1>
+    <p style="color:#ffb3b3">Wow. You really don't remember? This app is now permanently deleted.</p>
+    <p style="color:#ffb3b3; font-size:13px;">self destructing in 3... 2... 1...</p>
+    <button class="btn" style="margin-top:20px; background:#ffb3b3; color:#1a0303;" id="jkBtn">jk. try again</button>
+  </div>
+</div>
+
+<!-- ===== QUIZ ===== -->
+<div id="quizOverlay">
+  <div class="quiz-card" id="quizCard"></div>
+</div>
+
+<!-- ===== NAME PICKER ===== -->
+<div id="nameOverlay" class="hidden">
+  <div>
+    <h2>Who's this?</h2>
+    <p>So the app knows whose rating is whose</p>
+    <div class="name-choice">
+      <button data-pick="Aidan">Aidan</button>
+      <button data-pick="Bridget">Bridget</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app" class="hidden">
+  <header class="topbar">
+    <h1>Our Thing 💛</h1>
+    <p class="sub" id="hangoutSub">loading...</p>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="home" class="active">Home</button>
+    <button data-tab="watchlist">Watchlist</button>
+    <button data-tab="recipes">Recipes</button>
+    <button data-tab="dates">Dates</button>
+    <button data-tab="countdown">Countdown</button>
+    <button data-tab="memories">Memories</button>
+  </nav>
+
+  <main id="main"></main>
+
+  <footer class="theme-picker">
+    <div class="swatch" style="background:#e0637a" data-theme="default" title="Cinema"></div>
+    <div class="swatch" style="background:#ff2f92" data-theme="vhs" title="VHS"></div>
+    <div class="swatch" style="background:#c1673b" data-theme="postcard" title="Postcard"></div>
+    <div class="swatch" style="background:#a8555f" data-theme="scrapbook" title="Scrapbook"></div>
+  </footer>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, doc, onSnapshot, setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBTzX3FheY6bfsxfra4WJsKuKfr4qH51gE",
+  authDomain: "our-thing-52300.firebaseapp.com",
+  projectId: "our-thing-52300",
+  storageBucket: "our-thing-52300.firebasestorage.app",
+  messagingSenderId: "36521727746",
+  appId: "1:36521727746:web:6a91316706b9a8d4f5d41b",
+  measurementId: "G-BJ8RBE3C1L"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const sharedRef = doc(db, "ourthing", "shared");
+
+const DEFAULT_STATE = {
+  watchlist: [],
+  recipes: [],
+  dates: [],
+  countdowns: [],
+  memories: [],
+  quizResponses: [],
+  lastHangout: null,
+  hangoutGoalDays: 14,
+  theme: "default"
+};
+
+let state = structuredClone(DEFAULT_STATE);
+let stateLoaded = false;
+
+onSnapshot(sharedRef, (snap) => {
+  if (snap.exists()) {
+    state = { ...DEFAULT_STATE, ...snap.data() };
+  } else {
+    setDoc(sharedRef, DEFAULT_STATE);
+    state = structuredClone(DEFAULT_STATE);
+  }
+  stateLoaded = true;
+  applyTheme();
+  if (!document.getElementById('app').classList.contains('hidden')) render();
+});
+
+async function save(partial){
+  state = { ...state, ...partial };
+  await setDoc(sharedRef, partial, { merge: true });
+}
+
+function uid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
+/* ============ QUIZ ============ */
+const QUIZ = [
+  { q: "Where did we meet?", opts: ["Wells Fargo Arena","Xfinity Mobile Arena","Daltons","Arnolds"], correct: 0 },
+  { q: "What parking lot is the best?", opts: ["BJ's","BJ's","BJ's","BJ's"], correct: 0 },
+  { q: "What is the name of the song I taught you in the BJ's parking lot?", opts: ["Slow Dancing in a Burning Room","Smoke on the Water","Nutshell","McDonald's Rap"], correct: 0 },
+  { q: "What is your favorite moment of us so far?", free: true },
+  { q: "How much love do you have?", opts: ["A lil bit","Definitely more than a lil bit","Substantially more than a little bit but not quite a lot","A lot....."], correct: -1 }
+];
+
+let quizStep = 0;
+let quizName = "";
+
+function renderQuiz(){
+  const card = document.getElementById('quizCard');
+  if (quizStep === -1) { // intro: ask name
+    card.innerHTML = `
+      <h2>Hey you 💌</h2>
+      <p>Before you get in, a quick quiz. Who's taking it?</p>
+      <div class="name-choice" style="margin-top:16px;">
+        <button class="btn secondary" data-quizname="Aidan">Aidan</button>
+        <button class="btn" data-quizname="Bridget">Bridget</button>
+      </div>
+    `;
+    card.querySelectorAll('[data-quizname]').forEach(b=>{
+      b.onclick = ()=>{ quizName = b.dataset.quizname; quizStep = 0; renderQuiz(); };
+    });
+    return;
+  }
+
+  if (quizStep >= QUIZ.length) {
+    card.innerHTML = `
+      <h2>You're in 🎟️</h2>
+      <p>That's my girl. Welcome to Our Thing.</p>
+      <button class="btn btn-block" id="quizDoneBtn" style="margin-top:16px;">Let's go</button>
+    `;
+    document.getElementById('quizDoneBtn').onclick = ()=>{
+      localStorage.setItem('ot_onboardingDone', '1');
+      document.getElementById('quizOverlay').classList.add('hidden');
+      showNamePicker();
+    };
+    return;
+  }
+
+  const item = QUIZ[quizStep];
+  const progress = QUIZ.map((_,i)=>`<span class="${i<quizStep?'done':''}"></span>`).join('');
+
+  if (item.free) {
+    card.innerHTML = `
+      <div class="quiz-progress">${progress}</div>
+      <h2>Q${quizStep+1}. ${item.q}</h2>
+      <textarea class="quiz-free" id="freeAns" placeholder="type it out..."></textarea>
+      <button class="btn btn-block" id="freeSubmit" style="margin-top:12px;">Next</button>
+    `;
+    document.getElementById('freeSubmit').onclick = async ()=>{
+      const val = document.getElementById('freeAns').value.trim();
+      const entry = { name: quizName || 'unknown', answer: val, at: new Date().toISOString() };
+      const updated = [...(state.quizResponses||[]), entry];
+      await save({ quizResponses: updated });
+      quizStep++;
+      renderQuiz();
+    };
+    return;
+  }
+
+  card.innerHTML = `
+    <div class="quiz-progress">${progress}</div>
+    <h2>Q${quizStep+1}. ${item.q}</h2>
+    ${item.opts.map((o,i)=>`<button class="quiz-opt" data-i="${i}">${String.fromCharCode(65+i)} — ${o}</button>`).join('')}
+  `;
+  card.querySelectorAll('.quiz-opt').forEach(btn=>{
+    btn.onclick = ()=>{
+      const i = Number(btn.dataset.i);
+      // correct: -1 means any answer is "correct" (Q2 & Q5 style, no wrong answer)
+      const isWrong = item.correct >= 0 && i !== item.correct;
+      if (isWrong) {
+        btn.classList.add('wrong');
+        setTimeout(()=>{
+          document.getElementById('quizOverlay').classList.add('hidden');
+          document.getElementById('lockoutOverlay').classList.remove('hidden');
+        }, 350);
+      } else {
+        btn.classList.add('correct');
+        setTimeout(()=>{ quizStep++; renderQuiz(); }, 300);
+      }
+    };
+  });
+}
+
+document.getElementById('jkBtn').onclick = ()=>{
+  document.getElementById('lockoutOverlay').classList.add('hidden');
+  document.getElementById('quizOverlay').classList.remove('hidden');
+  quizStep = 0;
+  renderQuiz();
+};
+
+/* ============ NAME PICKER (per-session profile) ============ */
+function showNamePicker(){
+  document.getElementById('nameOverlay').classList.remove('hidden');
+}
+document.querySelectorAll('#nameOverlay [data-pick]').forEach(btn=>{
+  btn.onclick = ()=>{
+    sessionStorage.setItem('ot_me', btn.dataset.pick);
+    localStorage.setItem('ot_lastName', btn.dataset.pick);
+    document.getElementById('nameOverlay').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    render();
+  };
+});
+
+function me(){ return sessionStorage.getItem('ot_me') || 'Someone'; }
+function other(){ return me() === 'Aidan' ? 'Bridget' : 'Aidan'; }
+
+/* ============ INIT FLOW ============ */
+function boot(){
+  const onboardingDone = localStorage.getItem('ot_onboardingDone') === '1';
+  const waitForState = setInterval(()=>{
+    if (!stateLoaded) return;
+    clearInterval(waitForState);
+    if (!onboardingDone) {
+      quizStep = -1;
+      renderQuiz();
+    } else {
+      document.getElementById('quizOverlay').classList.add('hidden');
+      showNamePicker();
+    }
+  }, 60);
+}
+boot();
+
+/* ============ THEME ============ */
+function applyTheme(){
+  const t = state.theme || 'default';
+  document.body.setAttribute('data-theme', t === 'default' ? '' : t);
+  document.querySelectorAll('.swatch').forEach(s=>{
+    s.classList.toggle('active', s.dataset.theme === t);
+  });
+}
+document.querySelectorAll('.swatch').forEach(s=>{
+  s.onclick = ()=> save({ theme: s.dataset.theme });
+});
+
+/* ============ TABS ============ */
+let activeTab = 'home';
+document.getElementById('tabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-tab]');
+  if (!btn) return;
+  activeTab = btn.dataset.tab;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active', b===btn));
+  render();
+});
+
+/* ============ RENDER ROOT ============ */
+function render(){
+  renderHangoutSub();
+  const main = document.getElementById('main');
+  if (activeTab === 'home') main.innerHTML = renderHome();
+  if (activeTab === 'watchlist') main.innerHTML = renderRatedList('watchlist', '🎬', 'a movie or show');
+  if (activeTab === 'recipes') main.innerHTML = renderRecipes();
+  if (activeTab === 'dates') main.innerHTML = renderDates();
+  if (activeTab === 'countdown') main.innerHTML = renderCountdown();
+  if (activeTab === 'memories') main.innerHTML = renderMemories();
+  bindMainEvents();
+}
+
+function renderHangoutSub(){
+  const sub = document.getElementById('hangoutSub');
+  if (!state.lastHangout) { sub.textContent = `Hi ${me()} 👋`; return; }
+  const days = Math.floor((Date.now() - new Date(state.lastHangout).getTime()) / 86400000);
+  sub.textContent = `${days} day${days===1?'':'s'} since we hung out · Hi ${me()} 👋`;
+}
+
+/* ============ HOME ============ */
+function renderHome(){
+  const today = new Date();
+  const onThisDay = (state.memories||[]).filter(m=>{
+    if (!m.date) return false;
+    const d = new Date(m.date);
+    return d.getMonth()===today.getMonth() && d.getDate()===today.getDate() && d.getFullYear() !== today.getFullYear();
+  });
+  const nextCountdown = [...(state.countdowns||[])]
+    .filter(c=>new Date(c.date) >= new Date(new Date().toDateString()))
+    .sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
+
+  return `
+    ${onThisDay.length ? `
+      <div class="banner">
+        <h3>On this day 📸</h3>
+        ${onThisDay.map(m=>`<p>${m.note || ''} — ${new Date(m.date).getFullYear()}</p>`).join('')}
+      </div>` : ''}
+    ${nextCountdown ? `
+      <div class="card">
+        <h3>Coming up</h3>
+        <p>${nextCountdown.title} — ${daysUntil(nextCountdown.date)}</p>
+      </div>` : ''}
+    <div class="card">
+      <h3>Last hangout</h3>
+      <p>${state.lastHangout ? new Date(state.lastHangout).toLocaleDateString() : 'not logged yet'}</p>
+      <button class="btn" data-action="logHangout">We hung out today</button>
+    </div>
+    <div class="card">
+      <h3>Quick stats</h3>
+      <p>${(state.watchlist||[]).length} on the watchlist · ${(state.recipes||[]).length} recipes saved · ${(state.memories||[]).length} memories logged</p>
+    </div>
+  `;
+}
+
+function daysUntil(dateStr){
+  const diff = Math.ceil((new Date(dateStr) - new Date(new Date().toDateString())) / 86400000);
+  if (diff === 0) return 'today!';
+  if (diff === 1) return 'tomorrow';
+  return `in ${diff} days`;
+}
+
+/* ============ WATCHLIST (& shared renderer for rated items) ============ */
+function renderRatedList(key, emoji, placeholder){
+  const items = state[key] || [];
+  return `
+    <div class="card">
+      <h3>Add ${placeholder}</h3>
+      <div class="add-form">
+        <input id="newTitle_${key}" placeholder="Title">
+        <input id="newThumb_${key}" placeholder="Poster/thumbnail image URL (optional)">
+        <button class="btn" data-action="add${cap(key)}">Add to list</button>
+      </div>
+    </div>
+    ${items.length===0 ? `<div class="empty-state">Nothing here yet ${emoji}</div>` : ''}
+    ${items.map(it=>renderThumbCard(it, key)).join('')}
+  `;
+}
+
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+function renderThumbCard(it, key){
+  const ratings = it.ratings || {};
+  const vals = Object.values(ratings).filter(v=>typeof v==='number');
+  const avg = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : null;
+  const clash = vals.length===2 && Math.abs(vals[0]-vals[1]) >= 5;
+  const myRating = ratings[me()] ?? 5;
+
+  return `
+    <div class="thumb-card">
+      ${it.thumb ? `<img class="thumb" src="${escapeAttr(it.thumb)}">` : `<div class="thumb-ph">🎬</div>`}
+      <div class="thumb-body">
+        <h3>${escapeHtml(it.title)}</h3>
+        ${avg ? `<div class="rating-row">
+            <span class="rating-pill">avg ${avg}/10</span>
+            ${clash ? `<span class="clash">⚡ clashing opinions</span>` : ''}
+          </div>` : ''}
+        <div class="rating-row">
+          ${Object.entries(ratings).map(([n,v])=>`<span class="rating-pill">${n}: ${v}/10</span>`).join('')}
+        </div>
+        <div class="rating-input">
+          <input type="range" min="1" max="10" value="${myRating}" data-rate="${key}:${it.id}">
+          <span id="rateVal_${it.id}">${myRating}</span>
+        </div>
+        <button class="del-btn" data-action="del${cap(key)}" data-id="${it.id}">remove</button>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(s=''){ return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function escapeAttr(s=''){ return escapeHtml(s); }
+
+/* ============ RECIPES ============ */
+function renderRecipes(){
+  const items = state.recipes || [];
+  return `
+    <div class="card">
+      <h3>Add a recipe</h3>
+      <div class="add-form">
+        <input id="recipeUrl" placeholder="Paste a TikTok / YouTube / reel link">
+        <button class="btn secondary" data-action="fetchRecipePreview">Try to fetch preview</button>
+        <div id="recipePreviewBox"></div>
+        <input id="recipeTitle" placeholder="Recipe name">
+        <input id="recipeThumb" placeholder="Thumbnail image URL (optional, auto-fills if fetched)">
+        <textarea id="recipeNotes" placeholder="Ingredients / notes" rows="3"></textarea>
+        <button class="btn" data-action="addRecipe">Save recipe</button>
+        <p class="field-label">Auto-fetch only works for TikTok & YouTube links (grabs title + thumbnail). Instagram and others need manual entry — their sites don't allow it.</p>
+      </div>
+    </div>
+    ${items.length===0 ? `<div class="empty-state">No recipes saved yet 🍳</div>` : ''}
+    ${items.map(it=>`
+      <div class="thumb-card">
+        ${it.thumb ? `<img class="thumb" src="${escapeAttr(it.thumb)}">` : `<div class="thumb-ph">🍳</div>`}
+        <div class="thumb-body">
+          <h3>${escapeHtml(it.title)}</h3>
+          ${it.sourceUrl ? `<p style="font-size:12px;"><a href="${escapeAttr(it.sourceUrl)}" target="_blank">source link</a></p>` : ''}
+          ${it.notes ? `<p style="font-size:13px;">${escapeHtml(it.notes)}</p>` : ''}
+          <button class="del-btn" data-action="delRecipe" data-id="${it.id}">remove</button>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+let fetchedPreview = null;
+async function fetchRecipePreview(){
+  const urlInput = document.getElementById('recipeUrl');
+  const url = urlInput.value.trim();
+  const box = document.getElementById('recipePreviewBox');
+  if (!url) return;
+  box.innerHTML = `<p class="field-label">fetching...</p>`;
+  try {
+    let oembedUrl = null;
+    if (/tiktok\.com/.test(url)) oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
+    else if (/youtu\.?be/.test(url)) oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+
+    if (!oembedUrl) {
+      box.innerHTML = `<p class="field-label">Can't auto-fetch this link — fill in the fields manually below.</p>`;
+      return;
+    }
+    const res = await fetch(oembedUrl);
+    if (!res.ok) throw new Error('fetch failed');
+    const data = await res.json();
+    fetchedPreview = { title: data.title, thumb: data.thumbnail_url };
+    document.getElementById('recipeTitle').value = data.title || '';
+    document.getElementById('recipeThumb').value = data.thumbnail_url || '';
+    box.innerHTML = `<div class="link-preview">${data.thumbnail_url?`<img src="${escapeAttr(data.thumbnail_url)}">`:''}<span>${escapeHtml(data.title||'preview found')}</span></div>`;
+  } catch(err){
+    box.innerHTML = `<p class="field-label">Couldn't fetch a preview for that link — enter the details manually below.</p>`;
+  }
+}
+
+/* ============ DATES ============ */
+function renderDates(){
+  const items = state.dates || [];
+  return `
+    <div class="card">
+      <h3>Add a date idea</h3>
+      <div class="add-form">
+        <input id="newDateTitle" placeholder="Date idea">
+        <textarea id="newDateNote" placeholder="notes (optional)" rows="2"></textarea>
+        <button class="btn" data-action="addDate">Add</button>
+      </div>
+    </div>
+    ${items.length===0 ? `<div class="empty-state">No date ideas yet 💑</div>` : ''}
+    ${items.map(d=>`
+      <div class="card row-between">
+        <div>
+          <h3 style="${d.done?'text-decoration:line-through;color:var(--sub);':''}">${escapeHtml(d.title)}</h3>
+          ${d.note ? `<p>${escapeHtml(d.note)}</p>` : ''}
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+          <button class="btn secondary" data-action="toggleDate" data-id="${d.id}">${d.done?'undo':'done'}</button>
+          <button class="del-btn" data-action="delDate" data-id="${d.id}">remove</button>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+/* ============ COUNTDOWN ============ */
+function renderCountdown(){
+  const items = [...(state.countdowns||[])].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const now = new Date(new Date().toDateString());
+  return `
+    <div class="card">
+      <h3>Add a countdown</h3>
+      <div class="add-form">
+        <input id="newCdTitle" placeholder="What's coming up?">
+        <input id="newCdDate" type="date">
+        <button class="btn" data-action="addCountdown">Add</button>
+      </div>
+    </div>
+    ${items.length===0 ? `<div class="empty-state">Nothing counting down yet ⏳</div>` : ''}
+    ${items.map(c=>{
+      const past = new Date(c.date) < now;
+      return `<div class="card row-between">
+        <div><h3>${escapeHtml(c.title)}</h3><p>${past ? 'already happened' : daysUntil(c.date)}</p></div>
+        <button class="del-btn" data-action="delCountdown" data-id="${c.id}">remove</button>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+/* ============ MEMORIES ============ */
+function renderMemories(){
+  const items = [...(state.memories||[])].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  return `
+    <div class="card">
+      <h3>Log a memory</h3>
+      <div class="add-form">
+        <input id="newMemNote" placeholder="What happened?">
+        <input id="newMemDate" type="date">
+        <button class="btn" data-action="addMemory">Save</button>
+      </div>
+    </div>
+    ${items.length===0 ? `<div class="empty-state">No memories logged yet 📖</div>` : ''}
+    ${items.map(m=>`
+      <div class="card">
+        <p style="font-size:12px;">${m.date ? new Date(m.date).toLocaleDateString() : ''}</p>
+        <h3>${escapeHtml(m.note)}</h3>
+        <button class="del-btn" data-action="delMemory" data-id="${m.id}">remove</button>
+      </div>
+    `).join('')}
+  `;
+}
+
+/* ============ EVENT DELEGATION FOR MAIN ============ */
+function bindMainEvents(){
+  const main = document.getElementById('main');
+
+  main.querySelectorAll('input[data-rate]').forEach(inp=>{
+    inp.addEventListener('input', (e)=>{
+      const label = document.getElementById(`rateVal_${inp.dataset.rate.split(':')[1]}`);
+      if (label) label.textContent = inp.value;
+    });
+    inp.addEventListener('change', async (e)=>{
+      const [key, id] = inp.dataset.rate.split(':');
+      const list = [...(state[key]||[])];
+      const item = list.find(x=>x.id===id);
+      if (!item) return;
+      item.ratings = { ...(item.ratings||{}), [me()]: Number(inp.value) };
+      await save({ [key]: list });
+    });
+  });
+
+  main.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+
+    if (action === 'logHangout') {
+      await save({ lastHangout: new Date().toISOString() });
+      render();
+    }
+    if (action === 'addWatchlist') {
+      const title = document.getElementById('newTitle_watchlist').value.trim();
+      const thumb = document.getElementById('newThumb_watchlist').value.trim();
+      if (!title) return;
+      const list = [...(state.watchlist||[]), { id: uid(), title, thumb, ratings:{}, addedBy: me() }];
+      await save({ watchlist: list });
+      render();
+    }
+    if (action === 'delWatchlist') {
+      const list = (state.watchlist||[]).filter(x=>x.id!==btn.dataset.id);
+      await save({ watchlist: list });
+      render();
+    }
+    if (action === 'fetchRecipePreview') await fetchRecipePreview();
+    if (action === 'addRecipe') {
+      const title = document.getElementById('recipeTitle').value.trim();
+      const thumb = document.getElementById('recipeThumb').value.trim();
+      const notes = document.getElementById('recipeNotes').value.trim();
+      const sourceUrl = document.getElementById('recipeUrl').value.trim();
+      if (!title) return;
+      const list = [...(state.recipes||[]), { id: uid(), title, thumb, notes, sourceUrl, addedBy: me() }];
+      await save({ recipes: list });
+      fetchedPreview = null;
+      render();
+    }
+    if (action === 'delRecipe') {
+      const list = (state.recipes||[]).filter(x=>x.id!==btn.dataset.id);
+      await save({ recipes: list });
+      render();
+    }
+    if (action === 'addDate') {
+      const title = document.getElementById('newDateTitle').value.trim();
+      const note = document.getElementById('newDateNote').value.trim();
+      if (!title) return;
+      const list = [...(state.dates||[]), { id: uid(), title, note, done:false }];
+      await save({ dates: list });
+      render();
+    }
+    if (action === 'toggleDate') {
+      const list = [...(state.dates||[])];
+      const item = list.find(x=>x.id===btn.dataset.id);
+      if (item) item.done = !item.done;
+      await save({ dates: list });
+      render();
+    }
+    if (action === 'delDate') {
+      const list = (state.dates||[]).filter(x=>x.id!==btn.dataset.id);
+      await save({ dates: list });
+      render();
+    }
+    if (action === 'addCountdown') {
+      const title = document.getElementById('newCdTitle').value.trim();
+      const date = document.getElementById('newCdDate').value;
+      if (!title || !date) return;
+      const list = [...(state.countdowns||[]), { id: uid(), title, date }];
+      await save({ countdowns: list });
+      render();
+    }
+    if (action === 'delCountdown') {
+      const list = (state.countdowns||[]).filter(x=>x.id!==btn.dataset.id);
+      await save({ countdowns: list });
+      render();
+    }
+    if (action === 'addMemory') {
+      const note = document.getElementById('newMemNote').value.trim();
+      const date = document.getElementById('newMemDate').value || new Date().toISOString().slice(0,10);
+      if (!note) return;
+      const list = [...(state.memories||[]), { id: uid(), note, date, addedBy: me() }];
+      await save({ memories: list });
+      render();
+    }
+    if (action === 'delMemory') {
+      const list = (state.memories||[]).filter(x=>x.id!==btn.dataset.id);
+      await save({ memories: list });
+      render();
+    }
+  });
+}
+</script>
+</body>
+</html>
