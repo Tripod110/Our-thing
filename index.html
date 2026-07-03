@@ -218,29 +218,52 @@ function uid(){ return Math.random().toString(36).slice(2) + Date.now().toString
 
 /* ============ QUIZ ============ */
 const QUIZ = [
-  { q: "Where did we meet?", opts: ["Wells Fargo Arena","Xfinity Mobile Arena","Daltons","Arnolds"], correct: 0 },
-  { q: "What parking lot is the best?", opts: ["BJ's","BJ's","BJ's","BJ's"], correct: 0 },
-  { q: "What is the name of the song I taught you in the BJ's parking lot?", opts: ["Slow Dancing in a Burning Room","Smoke on the Water","Nutshell","McDonald's Rap"], correct: 0 },
+  { q: "Where did we meet?", opts: ["Wells Fargo Arena","Xfinity Mobile Arena","Daltons","Arnolds"], correct: 1 },
+  { q: "What parking lot is the best?", opts: ["BJ's","BJ's","BJ's","BJ's"], correct: -1 },
+  { q: "What is the name of the song I taught you in the BJ's parking lot?", opts: ["Slow Dancing in a Burning Room","Smoke on the Water","Nutshell","McDonald's Rap"], correct: 1 },
   { q: "What is your favorite moment of us so far?", free: true },
-  { q: "How much love do you have?", opts: ["A lil bit","Definitely more than a lil bit","Substantially more than a little bit but not quite a lot","A lot....."], correct: -1 }
+  { q: "How much love do you have?", opts: ["A lil bit","Definitely more than a lil bit","Substantially more than a little bit but not quite a lot","A lot....."], correct: -1, log: true }
 ];
+
+function isIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS reports as Mac
+}
+
+function enterApp(name){
+  sessionStorage.setItem('ot_me', name);
+  localStorage.setItem('ot_lastName', name);
+  document.getElementById('quizOverlay').classList.add('hidden');
+  document.getElementById('nameOverlay').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  render();
+}
 
 let quizStep = 0;
 let quizName = "";
 
 function renderQuiz(){
   const card = document.getElementById('quizCard');
-  if (quizStep === -1) { // intro: ask name
+  if (quizStep === -1) { // intro: ask name (quiz is for Bridget only)
     card.innerHTML = `
       <h2>Hey you 💌</h2>
-      <p>Before you get in, a quick quiz. Who's taking it?</p>
+      <p>Who's this?</p>
       <div class="name-choice" style="margin-top:16px;">
         <button class="btn secondary" data-quizname="Aidan">Aidan</button>
         <button class="btn" data-quizname="Bridget">Bridget</button>
       </div>
     `;
     card.querySelectorAll('[data-quizname]').forEach(b=>{
-      b.onclick = ()=>{ quizName = b.dataset.quizname; quizStep = 0; renderQuiz(); };
+      b.onclick = ()=>{
+        quizName = b.dataset.quizname;
+        if (quizName === 'Aidan') { // no quiz for Aidan
+          localStorage.setItem('ot_onboardingDone', '1');
+          enterApp('Aidan');
+          return;
+        }
+        quizStep = 0;
+        renderQuiz();
+      };
     });
     return;
   }
@@ -253,8 +276,7 @@ function renderQuiz(){
     `;
     document.getElementById('quizDoneBtn').onclick = ()=>{
       localStorage.setItem('ot_onboardingDone', '1');
-      document.getElementById('quizOverlay').classList.add('hidden');
-      showNamePicker();
+      enterApp(quizName || 'Bridget');
     };
     return;
   }
@@ -271,7 +293,7 @@ function renderQuiz(){
     `;
     document.getElementById('freeSubmit').onclick = async ()=>{
       const val = document.getElementById('freeAns').value.trim();
-      const entry = { name: quizName || 'unknown', answer: val, at: new Date().toISOString() };
+      const entry = { name: quizName || 'unknown', question: item.q, answer: val, at: new Date().toISOString() };
       const updated = [...(state.quizResponses||[]), entry];
       await save({ quizResponses: updated });
       quizStep++;
@@ -286,7 +308,7 @@ function renderQuiz(){
     ${item.opts.map((o,i)=>`<button class="quiz-opt" data-i="${i}">${String.fromCharCode(65+i)} — ${o}</button>`).join('')}
   `;
   card.querySelectorAll('.quiz-opt').forEach(btn=>{
-    btn.onclick = ()=>{
+    btn.onclick = async ()=>{
       const i = Number(btn.dataset.i);
       // correct: -1 means any answer is "correct" (Q2 & Q5 style, no wrong answer)
       const isWrong = item.correct >= 0 && i !== item.correct;
@@ -298,6 +320,10 @@ function renderQuiz(){
         }, 350);
       } else {
         btn.classList.add('correct');
+        if (item.log) {
+          const entry = { name: quizName || 'unknown', question: item.q, answer: item.opts[i], at: new Date().toISOString() };
+          await save({ quizResponses: [...(state.quizResponses||[]), entry] });
+        }
         setTimeout(()=>{ quizStep++; renderQuiz(); }, 300);
       }
     };
@@ -331,10 +357,11 @@ function other(){ return me() === 'Aidan' ? 'Bridget' : 'Aidan'; }
 /* ============ INIT FLOW ============ */
 function boot(){
   const onboardingDone = localStorage.getItem('ot_onboardingDone') === '1';
+  const needsQuiz = isIOS() && !onboardingDone; // quiz only on first open on an iOS device
   const waitForState = setInterval(()=>{
     if (!stateLoaded) return;
     clearInterval(waitForState);
-    if (!onboardingDone) {
+    if (needsQuiz) {
       quizStep = -1;
       renderQuiz();
     } else {
