@@ -661,7 +661,7 @@ function bindMainEvents(){
     });
   });
 
-  main.addEventListener('click', async (e)=>{
+  main.onclick = async (e)=>{ // assignment (not addEventListener) so re-renders don't stack duplicate handlers
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     const action = btn.dataset.action;
@@ -746,7 +746,7 @@ function bindMainEvents(){
       await save({ memories: list });
       render();
     }
-  });
+  };
 }
 </script>
 </body>
