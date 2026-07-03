@@ -139,6 +139,19 @@
 
   .mem-photo{width:100%; max-height:340px; object-fit:cover; border-radius:12px; margin:6px 0; display:block; background:var(--line);}
 
+  /* Home: tonight's picks + progress */
+  .duo{display:flex; gap:12px; margin-bottom:14px;}
+  .mini-card{flex:1; min-width:0; background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:12px; cursor:pointer;}
+  .mini-label{font-size:11px; letter-spacing:1px; color:var(--sub); font-weight:700; margin-bottom:8px;}
+  .mini-thumb{width:100%; height:110px; object-fit:cover; border-radius:10px; margin-bottom:8px; background:var(--line); display:block;}
+  .mini-thumb-ph{width:100%; height:110px; border-radius:10px; background:var(--line); display:flex; align-items:center; justify-content:center; font-size:30px; margin-bottom:8px;}
+  .mini-card h3{font-size:14px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;}
+  .mini-shuffle{background:none; border:none; color:var(--accent); font-size:12px; font-weight:600; padding:4px 0;}
+  .progress{height:8px; background:var(--line); border-radius:4px; overflow:hidden;}
+  .progress i{display:block; height:100%; background:var(--accent); border-radius:4px; transition:width .4s;}
+  .prog-row{margin-bottom:10px;}
+  .prog-row .row-between{font-size:13px; margin-bottom:4px; color:var(--sub);}
+
   .surprise-pick{outline:3px solid var(--accent); outline-offset:-3px;}
   .confetti-piece{position:fixed; top:-30px; z-index:150; font-size:22px; pointer-events:none; animation:confetti-fall linear forwards;}
   @keyframes confetti-fall{to{transform:translateY(115vh) rotate(720deg);}}
@@ -563,12 +576,14 @@ document.getElementById('switchUser').onclick = ()=>{
 
 /* ============ TABS ============ */
 let activeTab = 'home';
+function setTab(tab){
+  activeTab = tab;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab === tab));
+  render();
+}
 document.getElementById('tabs').addEventListener('click', (e)=>{
   const btn = e.target.closest('button[data-tab]');
-  if (!btn) return;
-  activeTab = btn.dataset.tab;
-  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active', b===btn));
-  render();
+  if (btn) setTab(btn.dataset.tab);
 });
 
 /* ============ RENDER ROOT ============ */
@@ -594,6 +609,36 @@ function renderHangoutSub(){
 }
 
 /* ============ HOME ============ */
+let shuffleSeed = { watch: 0, cook: 0 };
+function pickOf(list, kind){
+  if (!list.length) return null;
+  const daySeed = Math.floor(Date.now() / 86400000); // rotates daily, shuffle bumps it
+  return list[(daySeed + shuffleSeed[kind]) % list.length];
+}
+
+function miniPickCard(kind, label, emoji, pick, goto, emptyText){
+  return `
+    <div class="mini-card" data-goto="${goto}">
+      <p class="mini-label">${emoji} ${label}</p>
+      ${pick ? `
+        ${pick.thumb ? `<img class="mini-thumb" src="${escapeAttr(pick.thumb)}">` : `<div class="mini-thumb-ph">${emoji}</div>`}
+        <h3>${escapeHtml(pick.title)}</h3>
+        <button class="mini-shuffle" data-action="shufflePick" data-kind="${kind}">🎲 another</button>
+      ` : `<div class="mini-thumb-ph">${emoji}</div><p style="font-size:13px;">${emptyText}</p>`}
+    </div>
+  `;
+}
+
+function progRow(label, done, total){
+  const pct = total ? Math.round(done/total*100) : 0;
+  return `
+    <div class="prog-row">
+      <div class="row-between"><span>${label}</span><span>${done}/${total}</span></div>
+      <div class="progress"><i style="width:${pct}%"></i></div>
+    </div>
+  `;
+}
+
 function renderHome(){
   const today = new Date();
   const onThisDay = (state.memories||[]).filter(m=>{
@@ -604,6 +649,38 @@ function renderHome(){
   const nextCountdown = [...(state.countdowns||[])]
     .filter(c=>parseLocalDate(c.date) >= new Date(new Date().toDateString()))
     .sort((a,b)=>parseLocalDate(a.date)-parseLocalDate(b.date))[0];
+
+  // tonight's picks — prefer watchlist items not yet rated by both
+  const watchAll = state.watchlist || [];
+  const notBothRated = watchAll.filter(w => Object.values(w.ratings||{}).filter(v=>typeof v==='number').length < 2);
+  const watchPick = pickOf(notBothRated.length ? notBothRated : watchAll, 'watch');
+  const cookPick = pickOf(state.recipes || [], 'cook');
+
+  // progress
+  const datesTotal = (state.dates||[]).length;
+  const datesDone = (state.dates||[]).filter(d=>d.done).length;
+  const bothRated = watchAll.length - notBothRated.length;
+  const memCount = (state.memories||[]).length;
+
+  // hangout meter
+  const goal = state.hangoutGoalDays || 14;
+  let hangoutHtml;
+  if (!state.lastHangout) {
+    hangoutHtml = `<p>not logged yet — press the button after your next one 💛</p>`;
+  } else {
+    const days = Math.floor((Date.now() - new Date(state.lastHangout).getTime()) / 86400000);
+    const pct = Math.min(100, Math.round(days / goal * 100));
+    const overdue = days >= goal;
+    const mood = days === 0 ? "we hung out today 🥰"
+      : days < goal/2 ? "all good, but I still miss you 💛"
+      : overdue ? "way too long. fix this immediately ⏰" : "getting to be time, don't you think? 👀";
+    hangoutHtml = `
+      <div class="row-between" style="font-size:13px; color:var(--sub); margin-bottom:4px;">
+        <span>${days} day${days===1?'':'s'} since</span><span>goal: every ${goal}</span>
+      </div>
+      <div class="progress" style="margin-bottom:8px;"><i style="width:${pct}%; ${overdue ? 'background:#d94848;' : ''}"></i></div>
+      <p>${mood}</p>`;
+  }
 
   return `
     <div class="banner">
@@ -620,10 +697,20 @@ function renderHome(){
         <h3>Coming up</h3>
         <p>${escapeHtml(nextCountdown.title)} — ${daysUntil(nextCountdown.date)}</p>
       </div>` : ''}
+    <div class="duo">
+      ${miniPickCard('watch', 'WATCH NOW', '🎬', watchPick, 'watchlist', 'nothing queued — add your first!')}
+      ${miniPickCard('cook', 'COOK LATER', '🍳', cookPick, 'recipes', 'no recipes saved yet — go find one!')}
+    </div>
     <div class="card">
-      <h3>Last hangout</h3>
-      <p>${state.lastHangout ? new Date(state.lastHangout).toLocaleDateString() : 'not logged yet'}</p>
-      <button class="btn" data-action="logHangout">We hung out today</button>
+      <h3>Hangout meter</h3>
+      ${hangoutHtml}
+      <button class="btn" data-action="logHangout" style="margin-top:6px;">We hung out today</button>
+    </div>
+    <div class="card">
+      <h3>Our progress</h3>
+      ${datesTotal ? progRow('💑 date ideas done', datesDone, datesTotal) : `<p style="font-size:13px;">no date ideas yet — the Dates tab is waiting</p>`}
+      ${watchAll.length ? progRow('🎬 rated by us both', bothRated, watchAll.length) : ''}
+      <p style="font-size:13px; margin:6px 0 0;">📖 ${memCount} memor${memCount===1?'y':'ies'} logged & counting</p>
     </div>
   `;
 }
@@ -925,9 +1012,17 @@ function bindMainEvents(){
 
   main.onclick = async (e)=>{ // assignment (not addEventListener) so re-renders don't stack duplicate handlers
     const btn = e.target.closest('[data-action]');
-    if (!btn) return;
+    if (!btn) {
+      const go = e.target.closest('[data-goto]');
+      if (go) setTab(go.dataset.goto);
+      return;
+    }
     const action = btn.dataset.action;
 
+    if (action === 'shufflePick') {
+      shuffleSeed[btn.dataset.kind]++;
+      render();
+    }
     if (action === 'logHangout') {
       await save({ lastHangout: new Date().toISOString() });
       render();
