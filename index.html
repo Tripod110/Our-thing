@@ -43,6 +43,14 @@
   .btn.ghost{background:transparent; color:var(--sub); border:none; box-shadow:none; text-decoration:underline;}
   .btn-block{width:100%;}
 
+  /* Landing */
+  #landingOverlay{position:fixed; inset:0; z-index:120; background:linear-gradient(160deg, var(--accent), var(--accent2)); display:flex; align-items:center; justify-content:center; text-align:center; padding:24px; cursor:pointer; transition:opacity .5s;}
+  #landingOverlay.fade{opacity:0; pointer-events:none;}
+  .landing-inner h1{font-size:44px; color:#fff; margin-bottom:16px; letter-spacing:.5px; text-shadow:0 2px 12px rgba(0,0,0,.15);}
+  .landing-saying{color:rgba(255,255,255,.95); font-size:18px; font-weight:600; font-style:italic; max-width:320px; margin:0 auto 46px; line-height:1.4;}
+  .landing-hint{color:rgba(255,255,255,.8); font-size:13px; animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:.8;}50%{opacity:.35;}}
+
   /* Quiz */
   #quizOverlay{position:fixed; inset:0; background:var(--bg); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px;}
   .quiz-card{background:var(--card); border-radius:24px; box-shadow:var(--shadow); padding:28px 24px; max-width:420px; width:100%;}
@@ -65,14 +73,15 @@
   .name-choice button{flex:1; padding:26px 10px; border-radius:18px; border:2px solid var(--line); background:var(--card); font-size:18px; font-weight:700; color:var(--ink); box-shadow:var(--shadow);}
   .name-choice button:active{border-color:var(--accent);}
 
-  /* App shell */
-  header.topbar{position:sticky; top:0; background:var(--bg); z-index:10; padding:16px 16px 8px; border-bottom:1px solid var(--line);}
+  /* App shell — centered header clear of the notch, native-style bottom tab bar */
+  header.topbar{position:sticky; top:0; background:var(--bg); z-index:10; padding:calc(14px + env(safe-area-inset-top)) 16px 10px; border-bottom:1px solid var(--line); text-align:center;}
   header.topbar h1{font-size:22px;}
   header.topbar .sub{font-size:13px; margin:0;}
-  main{padding:16px; max-width:640px; margin:0 auto;}
-  nav.tabs{display:flex; overflow-x:auto; gap:6px; padding:10px 16px; background:var(--bg); position:sticky; top:0; z-index:9; border-bottom:1px solid var(--line);}
-  nav.tabs button{white-space:nowrap; background:transparent; border:none; padding:8px 14px; border-radius:20px; color:var(--sub); font-size:14px; font-weight:600;}
-  nav.tabs button.active{background:var(--accent); color:#fff;}
+  main{padding:16px 16px calc(110px + env(safe-area-inset-bottom)); max-width:640px; margin:0 auto;}
+  nav.tabs{position:fixed; bottom:0; left:0; right:0; z-index:20; display:flex; justify-content:space-around; padding:6px 4px calc(6px + env(safe-area-inset-bottom)); background:var(--card); border-top:1px solid var(--line); box-shadow:0 -4px 16px rgba(0,0,0,.06);}
+  nav.tabs button{flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; background:transparent; border:none; padding:4px 2px; color:var(--sub); font-size:10px; font-weight:600; white-space:nowrap;}
+  nav.tabs button .ticon{font-size:20px; line-height:1.1;}
+  nav.tabs button.active{color:var(--accent);}
 
   .card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; margin-bottom:14px;}
   .row{display:flex; gap:10px; align-items:center;}
@@ -97,8 +106,7 @@
   .rating-input{display:flex; align-items:center; gap:8px; margin-top:8px;}
   .rating-input input[type=range]{flex:1;}
 
-  footer.theme-picker{display:flex; justify-content:center; gap:10px; padding:20px; }
-  .swatch{width:26px; height:26px; border-radius:50%; border:2px solid var(--line); cursor:pointer;}
+  .swatch{width:30px; height:30px; border-radius:50%; border:2px solid var(--line); cursor:pointer;}
   .swatch.active{outline:2px solid var(--accent); outline-offset:2px;}
 
   .badge{display:inline-block; font-size:11px; background:var(--accent2); color:#fff; border-radius:8px; padding:2px 8px; margin-left:6px;}
@@ -110,10 +118,6 @@
 
   .mem-photo{width:100%; max-height:340px; object-fit:cover; border-radius:12px; margin:6px 0; display:block; background:var(--line);}
 
-  #sayingToast{position:fixed; left:50%; transform:translateX(-50%) translateY(20px); bottom:calc(18px + env(safe-area-inset-bottom)); background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:12px 18px; z-index:80; max-width:88vw; text-align:center; opacity:0; transition:opacity .4s, transform .4s; pointer-events:none;}
-  #sayingToast.show{opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto;}
-  #sayingToast p{margin:0; color:var(--ink); font-weight:600;}
-  #sayingToast span{font-size:11px; color:var(--sub);}
   .surprise-pick{outline:3px solid var(--accent); outline-offset:-3px;}
   .confetti-piece{position:fixed; top:-30px; z-index:150; font-size:22px; pointer-events:none; animation:confetti-fall linear forwards;}
   @keyframes confetti-fall{to{transform:translateY(115vh) rotate(720deg);}}
@@ -131,8 +135,17 @@
   </div>
 </div>
 
+<!-- ===== LANDING ===== -->
+<div id="landingOverlay">
+  <div class="landing-inner">
+    <h1>Our Thing 💛</h1>
+    <p class="landing-saying" id="landingSaying"></p>
+    <p class="landing-hint">tap anywhere to come in</p>
+  </div>
+</div>
+
 <!-- ===== QUIZ ===== -->
-<div id="quizOverlay">
+<div id="quizOverlay" class="hidden">
   <div class="quiz-card" id="quizCard"></div>
 </div>
 
@@ -148,9 +161,6 @@
   </div>
 </div>
 
-<!-- ===== STARTUP SAYING TOAST ===== -->
-<div id="sayingToast"></div>
-
 <!-- ===== APP ===== -->
 <div id="app" class="hidden">
   <header class="topbar">
@@ -158,23 +168,16 @@
     <p class="sub" id="hangoutSub">loading...</p>
   </header>
 
-  <nav class="tabs" id="tabs">
-    <button data-tab="home" class="active">Home</button>
-    <button data-tab="watchlist">Watchlist</button>
-    <button data-tab="recipes">Recipes</button>
-    <button data-tab="dates">Dates</button>
-    <button data-tab="countdown">Countdown</button>
-    <button data-tab="memories">Memories</button>
-  </nav>
-
   <main id="main"></main>
 
-  <footer class="theme-picker">
-    <div class="swatch" style="background:#e0637a" data-theme="default" title="Cinema"></div>
-    <div class="swatch" style="background:#ff2f92" data-theme="vhs" title="VHS"></div>
-    <div class="swatch" style="background:#c1673b" data-theme="postcard" title="Postcard"></div>
-    <div class="swatch" style="background:#a8555f" data-theme="scrapbook" title="Scrapbook"></div>
-  </footer>
+  <nav class="tabs" id="tabs">
+    <button data-tab="home" class="active"><span class="ticon">🏠</span>Home</button>
+    <button data-tab="watchlist"><span class="ticon">🎬</span>Watch</button>
+    <button data-tab="recipes"><span class="ticon">🍳</span>Recipes</button>
+    <button data-tab="dates"><span class="ticon">💑</span>Dates</button>
+    <button data-tab="countdown"><span class="ticon">⏳</span>Days</button>
+    <button data-tab="memories"><span class="ticon">📖</span>Memories</button>
+  </nav>
 </div>
 
 <script type="module">
@@ -229,6 +232,7 @@ onSnapshot(sharedRef, (snap) => {
 
 function showConnectionError(){
   if (stateLoaded) return;
+  document.getElementById('landingOverlay').classList.add('hidden');
   document.getElementById('nameOverlay').classList.add('hidden');
   document.getElementById('quizOverlay').classList.remove('hidden');
   document.getElementById('quizCard').innerHTML = `
@@ -267,10 +271,9 @@ function enterApp(name){
   document.getElementById('nameOverlay').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   render();
-  showStartupSaying();
 }
 
-/* ============ STARTUP SAYINGS (rotates — never the same one twice in a row) ============ */
+/* ============ LANDING SAYINGS (rotates — never the same one twice in a row) ============ */
 const SAYINGS = [
   "Ahhh, I cut myself",
   "Gimme 10",
@@ -287,15 +290,11 @@ const SAYINGS = [
   "You have no good car ideas!"
 ];
 
-function showStartupSaying(){
+function nextSaying(){
   const prev = Number(localStorage.getItem('ot_sayingIdx') ?? -1);
   const idx = (prev + 1) % SAYINGS.length;
   localStorage.setItem('ot_sayingIdx', idx);
-  const toast = document.getElementById('sayingToast');
-  toast.innerHTML = `<p>&ldquo;${escapeHtml(SAYINGS[idx])}&rdquo;</p><span>— the show said it, not me</span>`;
-  toast.classList.add('show');
-  toast.onclick = ()=> toast.classList.remove('show');
-  setTimeout(()=> toast.classList.remove('show'), 7000);
+  return SAYINGS[idx];
 }
 
 let quizStep = 0;
@@ -422,22 +421,43 @@ document.querySelectorAll('#nameOverlay [data-pick]').forEach(btn=>{
 function me(){ return sessionStorage.getItem('ot_me') || 'Someone'; }
 function other(){ return me() === 'Aidan' ? 'Bridget' : 'Aidan'; }
 
-/* ============ INIT FLOW ============ */
+/* ============ INIT FLOW: landing → (quiz on first iOS open) → who's this → app ============ */
 function boot(){
   const onboardingDone = localStorage.getItem('ot_onboardingDone') === '1';
   const needsQuiz = isIOS() && !onboardingDone; // quiz only on first open on an iOS device
-  const bootTimeout = setTimeout(showConnectionError, 10000); // don't leave a blank screen if Firebase never answers
+
+  document.getElementById('landingSaying').textContent = `“${nextSaying()}”`;
+
+  const landing = document.getElementById('landingOverlay');
+  let tappedWhileLoading = false;
+  let proceeded = false;
+
+  function proceedFromLanding(){
+    if (proceeded) return;
+    proceeded = true;
+    landing.classList.add('fade');
+    setTimeout(()=> landing.classList.add('hidden'), 550);
+    if (needsQuiz) {
+      quizStep = -1;
+      renderQuiz();
+      document.getElementById('quizOverlay').classList.remove('hidden');
+    } else {
+      showNamePicker();
+    }
+  }
+
+  landing.onclick = ()=>{
+    if (stateLoaded) { proceedFromLanding(); return; }
+    tappedWhileLoading = true;
+    document.querySelector('.landing-hint').textContent = 'loading…';
+  };
+
+  const bootTimeout = setTimeout(showConnectionError, 12000); // don't leave a dead landing page if Firebase never answers
   const waitForState = setInterval(()=>{
     if (!stateLoaded) return;
     clearTimeout(bootTimeout);
     clearInterval(waitForState);
-    if (needsQuiz) {
-      quizStep = -1;
-      renderQuiz();
-    } else {
-      document.getElementById('quizOverlay').classList.add('hidden');
-      showNamePicker();
-    }
+    if (tappedWhileLoading) proceedFromLanding();
   }, 60);
 }
 boot();
@@ -450,9 +470,6 @@ function applyTheme(){
     s.classList.toggle('active', s.dataset.theme === t);
   });
 }
-document.querySelectorAll('.swatch').forEach(s=>{
-  s.onclick = ()=> save({ theme: s.dataset.theme });
-});
 
 /* ============ TABS ============ */
 let activeTab = 'home';
@@ -476,6 +493,7 @@ function render(){
   if (activeTab === 'memories') main.innerHTML = renderMemories();
   bindMainEvents();
   hydratePhotos();
+  applyTheme();
 }
 
 function renderHangoutSub(){
@@ -498,6 +516,10 @@ function renderHome(){
     .sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
 
   return `
+    <div class="banner">
+      <h3>Hi ${me()} 💛</h3>
+      <p>welcome back to our thing</p>
+    </div>
     ${onThisDay.length ? `
       <div class="banner">
         <h3>On this day 📸</h3>
@@ -516,6 +538,15 @@ function renderHome(){
     <div class="card">
       <h3>Quick stats</h3>
       <p>${(state.watchlist||[]).length} on the watchlist · ${(state.recipes||[]).length} recipes saved · ${(state.memories||[]).length} memories logged</p>
+    </div>
+    <div class="card">
+      <h3>Theme</h3>
+      <div class="row" style="gap:14px; margin-top:8px;">
+        <div class="swatch" style="background:#e0637a" data-theme="default" title="Cinema"></div>
+        <div class="swatch" style="background:#ff2f92" data-theme="vhs" title="VHS"></div>
+        <div class="swatch" style="background:#c1673b" data-theme="postcard" title="Postcard"></div>
+        <div class="swatch" style="background:#a8555f" data-theme="scrapbook" title="Scrapbook"></div>
+      </div>
     </div>
   `;
 }
@@ -803,6 +834,8 @@ function bindMainEvents(){
   });
 
   main.onclick = async (e)=>{ // assignment (not addEventListener) so re-renders don't stack duplicate handlers
+    const sw = e.target.closest('.swatch');
+    if (sw) { await save({ theme: sw.dataset.theme }); return; }
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     const action = btn.dataset.action;
