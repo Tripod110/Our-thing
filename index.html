@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e8b4bc">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
 <title>Our Thing</title>
 <style>
   :root{
@@ -105,6 +107,11 @@
   .del-btn{background:none; border:none; color:var(--sub); font-size:13px; text-decoration:underline; padding:4px 0;}
   .link-preview{display:flex; gap:10px; align-items:center; background:var(--bg); border-radius:10px; padding:8px; margin-top:6px;}
   .link-preview img{width:44px; height:44px; object-fit:cover; border-radius:8px;}
+
+  .mem-photo{width:100%; max-height:340px; object-fit:cover; border-radius:12px; margin:6px 0; display:block; background:var(--line);}
+  .surprise-pick{outline:3px solid var(--accent); outline-offset:-3px;}
+  .confetti-piece{position:fixed; top:-30px; z-index:150; font-size:22px; pointer-events:none; animation:confetti-fall linear forwards;}
+  @keyframes confetti-fall{to{transform:translateY(115vh) rotate(720deg);}}
 </style>
 </head>
 <body>
@@ -165,7 +172,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, doc, onSnapshot, setDoc
+  getFirestore, doc, onSnapshot, setDoc, getDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -207,7 +214,22 @@ onSnapshot(sharedRef, (snap) => {
   stateLoaded = true;
   applyTheme();
   if (!document.getElementById('app').classList.contains('hidden')) render();
+}, (err) => {
+  console.error('Firestore connection error', err);
+  showConnectionError();
 });
+
+function showConnectionError(){
+  if (stateLoaded) return;
+  document.getElementById('nameOverlay').classList.add('hidden');
+  document.getElementById('quizOverlay').classList.remove('hidden');
+  document.getElementById('quizCard').innerHTML = `
+    <h2>Can't connect 📡</h2>
+    <p>The app couldn't reach its little cloud. Check your connection and try again.</p>
+    <button class="btn btn-block" id="retryBtn" style="margin-top:12px;">Retry</button>
+  `;
+  document.getElementById('retryBtn').onclick = ()=> location.reload();
+}
 
 async function save(partial){
   state = { ...state, ...partial };
@@ -274,6 +296,7 @@ function renderQuiz(){
       <p>That's my girl. Welcome to Our Thing.</p>
       <button class="btn btn-block" id="quizDoneBtn" style="margin-top:16px;">Let's go</button>
     `;
+    throwConfetti();
     document.getElementById('quizDoneBtn').onclick = ()=>{
       localStorage.setItem('ot_onboardingDone', '1');
       enterApp(quizName || 'Bridget');
@@ -337,6 +360,20 @@ document.getElementById('jkBtn').onclick = ()=>{
   renderQuiz();
 };
 
+function throwConfetti(){
+  const emo = ['💛','💖','✨','🎉','🌸'];
+  for (let i = 0; i < 44; i++){
+    const s = document.createElement('span');
+    s.className = 'confetti-piece';
+    s.textContent = emo[i % emo.length];
+    s.style.left = (Math.random()*100) + 'vw';
+    s.style.animationDuration = (2.2 + Math.random()*1.8) + 's';
+    s.style.animationDelay = (Math.random()*0.9) + 's';
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(), 5200);
+  }
+}
+
 /* ============ NAME PICKER (per-session profile) ============ */
 function showNamePicker(){
   document.getElementById('nameOverlay').classList.remove('hidden');
@@ -358,8 +395,10 @@ function other(){ return me() === 'Aidan' ? 'Bridget' : 'Aidan'; }
 function boot(){
   const onboardingDone = localStorage.getItem('ot_onboardingDone') === '1';
   const needsQuiz = isIOS() && !onboardingDone; // quiz only on first open on an iOS device
+  const bootTimeout = setTimeout(showConnectionError, 10000); // don't leave a blank screen if Firebase never answers
   const waitForState = setInterval(()=>{
     if (!stateLoaded) return;
+    clearTimeout(bootTimeout);
     clearInterval(waitForState);
     if (needsQuiz) {
       quizStep = -1;
@@ -405,6 +444,7 @@ function render(){
   if (activeTab === 'countdown') main.innerHTML = renderCountdown();
   if (activeTab === 'memories') main.innerHTML = renderMemories();
   bindMainEvents();
+  hydratePhotos();
 }
 
 function renderHangoutSub(){
@@ -490,6 +530,7 @@ function renderThumbCard(it, key){
         ${avg ? `<div class="rating-row">
             <span class="rating-pill">avg ${avg}/10</span>
             ${clash ? `<span class="clash">⚡ clashing opinions</span>` : ''}
+            ${vals.length===2 && !clash ? `<span class="rating-pill">💘 you both rated this</span>` : ''}
           </div>` : ''}
         <div class="rating-row">
           ${Object.entries(ratings).map(([n,v])=>`<span class="rating-pill">${n}: ${v}/10</span>`).join('')}
@@ -568,8 +609,10 @@ async function fetchRecipePreview(){
 }
 
 /* ============ DATES ============ */
+let surpriseId = null;
 function renderDates(){
   const items = state.dates || [];
+  const open = items.filter(d=>!d.done);
   return `
     <div class="card">
       <h3>Add a date idea</h3>
@@ -579,11 +622,12 @@ function renderDates(){
         <button class="btn" data-action="addDate">Add</button>
       </div>
     </div>
+    ${open.length ? `<button class="btn secondary btn-block" data-action="surpriseDate" style="margin-bottom:14px;">🎲 Surprise me — pick our next date</button>` : ''}
     ${items.length===0 ? `<div class="empty-state">No date ideas yet 💑</div>` : ''}
     ${items.map(d=>`
-      <div class="card row-between">
+      <div class="card row-between ${d.id===surpriseId ? 'surprise-pick' : ''}">
         <div>
-          <h3 style="${d.done?'text-decoration:line-through;color:var(--sub);':''}">${escapeHtml(d.title)}</h3>
+          <h3 style="${d.done?'text-decoration:line-through;color:var(--sub);':''}">${d.id===surpriseId ? '🎲 ' : ''}${escapeHtml(d.title)}</h3>
           ${d.note ? `<p>${escapeHtml(d.note)}</p>` : ''}
         </div>
         <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
@@ -628,6 +672,8 @@ function renderMemories(){
       <div class="add-form">
         <input id="newMemNote" placeholder="What happened?">
         <input id="newMemDate" type="date">
+        <input id="newMemPhoto" type="file" accept="image/*">
+        <p class="field-label">photo optional — it gets shrunk down to save space</p>
         <button class="btn" data-action="addMemory">Save</button>
       </div>
     </div>
@@ -635,11 +681,47 @@ function renderMemories(){
     ${items.map(m=>`
       <div class="card">
         <p style="font-size:12px;">${m.date ? new Date(m.date).toLocaleDateString() : ''}</p>
+        ${m.photoId ? `<img class="mem-photo" data-photo="${m.photoId}" alt="memory photo">` : ''}
         <h3>${escapeHtml(m.note)}</h3>
         <button class="del-btn" data-action="delMemory" data-id="${m.id}">remove</button>
       </div>
     `).join('')}
   `;
+}
+
+/* ============ MEMORY PHOTOS (stored as compressed JPEGs in their own Firestore docs) ============ */
+const photoCache = {};
+const photoRef = (id)=> doc(db, "ourthing_photos", id);
+
+function compressImage(file){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const max = 900;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      resolve(c.toDataURL('image/jpeg', 0.72));
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+async function hydratePhotos(){
+  for (const img of document.querySelectorAll('img[data-photo]')){
+    const id = img.dataset.photo;
+    if (!photoCache[id]) {
+      try {
+        const snap = await getDoc(photoRef(id));
+        if (snap.exists()) photoCache[id] = snap.data().data;
+      } catch(e){ continue; }
+    }
+    if (photoCache[id]) img.src = photoCache[id];
+  }
 }
 
 /* ============ EVENT DELEGATION FOR MAIN ============ */
@@ -720,6 +802,13 @@ function bindMainEvents(){
       await save({ dates: list });
       render();
     }
+    if (action === 'surpriseDate') {
+      const open = (state.dates||[]).filter(d=>!d.done);
+      if (open.length) {
+        surpriseId = open[Math.floor(Math.random()*open.length)].id;
+        render();
+      }
+    }
     if (action === 'addCountdown') {
       const title = document.getElementById('newCdTitle').value.trim();
       const date = document.getElementById('newCdDate').value;
@@ -737,13 +826,30 @@ function bindMainEvents(){
       const note = document.getElementById('newMemNote').value.trim();
       const date = document.getElementById('newMemDate').value || new Date().toISOString().slice(0,10);
       if (!note) return;
-      const list = [...(state.memories||[]), { id: uid(), note, date, addedBy: me() }];
+      let photoId = null;
+      const file = document.getElementById('newMemPhoto').files[0];
+      if (file) {
+        btn.textContent = 'saving photo...';
+        try {
+          const dataUrl = await compressImage(file);
+          photoId = uid();
+          photoCache[photoId] = dataUrl;
+          await setDoc(photoRef(photoId), { data: dataUrl, at: new Date().toISOString() });
+        } catch(e){
+          console.error('photo save failed', e);
+          photoId = null;
+          alert("Couldn't save the photo (storage not set up yet) — the memory was saved without it.");
+        }
+      }
+      const list = [...(state.memories||[]), { id: uid(), note, date, addedBy: me(), ...(photoId ? { photoId } : {}) }];
       await save({ memories: list });
       render();
     }
     if (action === 'delMemory') {
+      const gone = (state.memories||[]).find(x=>x.id===btn.dataset.id);
       const list = (state.memories||[]).filter(x=>x.id!==btn.dataset.id);
       await save({ memories: list });
+      if (gone && gone.photoId) { try { await deleteDoc(photoRef(gone.photoId)); } catch(e){} }
       render();
     }
   };

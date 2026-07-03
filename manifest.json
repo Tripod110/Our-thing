@@ -1,0 +1,13 @@
+{
+  "name": "Our Thing",
+  "short_name": "Our Thing",
+  "start_url": "/Our-thing/",
+  "scope": "/Our-thing/",
+  "display": "standalone",
+  "background_color": "#fdf6f0",
+  "theme_color": "#e8b4bc",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
