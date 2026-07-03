@@ -44,12 +44,25 @@
   .btn-block{width:100%;}
 
   /* Landing */
-  #landingOverlay{position:fixed; inset:0; z-index:120; background:linear-gradient(160deg, var(--accent), var(--accent2)); display:flex; align-items:center; justify-content:center; text-align:center; padding:24px; cursor:pointer; transition:opacity .5s;}
+  #landingOverlay{position:fixed; inset:0; z-index:120; background:linear-gradient(160deg, var(--accent), var(--accent2), var(--accent)); background-size:250% 250%; animation:gradientShift 9s ease-in-out infinite; display:flex; align-items:center; justify-content:center; text-align:center; padding:24px; cursor:pointer; transition:opacity .5s; overflow:hidden;}
   #landingOverlay.fade{opacity:0; pointer-events:none;}
-  .landing-inner h1{font-size:44px; color:#fff; margin-bottom:16px; letter-spacing:.5px; text-shadow:0 2px 12px rgba(0,0,0,.15);}
-  .landing-saying{color:rgba(255,255,255,.95); font-size:18px; font-weight:600; font-style:italic; max-width:320px; margin:0 auto 46px; line-height:1.4;}
-  .landing-hint{color:rgba(255,255,255,.8); font-size:13px; animation:pulse 2s infinite;}
-  @keyframes pulse{0%,100%{opacity:.8;}50%{opacity:.35;}}
+  @keyframes gradientShift{0%,100%{background-position:0% 0%;}50%{background-position:100% 100%;}}
+
+  .landing-hearts{position:absolute; inset:0; pointer-events:none;}
+  .landing-hearts span{position:absolute; bottom:-36px; opacity:.5; animation:floatUp linear infinite;}
+  @keyframes floatUp{to{transform:translateY(-108vh) rotate(24deg);}}
+
+  .landing-inner{position:relative;}
+  .landing-inner > *{opacity:0; animation:fadeUp .8s ease forwards;}
+  .landing-logo{width:76px; margin:0 auto 6px; display:block; filter:drop-shadow(0 8px 20px rgba(0,0,0,.25)); animation:fadeUp .8s ease forwards, heartbeat 1.8s ease-in-out 1s infinite;}
+  @keyframes heartbeat{0%,100%{transform:scale(1);}12%{transform:scale(1.12);}24%{transform:scale(1);}36%{transform:scale(1.07);}48%{transform:scale(1);}}
+  @keyframes fadeUp{from{opacity:0; transform:translateY(16px);}to{opacity:1; transform:translateY(0);}}
+  .landing-inner h1{font-family:"Snell Roundhand","Savoye LET","Segoe Script","Brush Script MT",cursive; font-size:58px; font-weight:400; color:#fff; margin:0 0 2px; text-shadow:0 3px 16px rgba(0,0,0,.2); animation-delay:.15s;}
+  .landing-names{color:rgba(255,255,255,.9); font-size:13px; letter-spacing:5px; margin:0 0 36px; animation-delay:.3s;}
+  .landing-quote{background:rgba(255,255,255,.16); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,.28); border-radius:18px; padding:14px 20px; max-width:320px; margin:0 auto 48px; animation-delay:.45s;}
+  .landing-quote p{color:#fff; font-size:17px; font-weight:600; font-style:italic; margin:0; line-height:1.45;}
+  .landing-hint{color:rgba(255,255,255,.85); font-size:13px; letter-spacing:1px; animation:fadeUp .8s ease .9s forwards, pulse 2.2s ease-in-out 1.8s infinite;}
+  @keyframes pulse{0%,100%{opacity:.85;}50%{opacity:.35;}}
 
   /* Quiz */
   #quizOverlay{position:fixed; inset:0; background:var(--bg); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px;}
@@ -137,9 +150,14 @@
 
 <!-- ===== LANDING ===== -->
 <div id="landingOverlay">
+  <div class="landing-hearts" aria-hidden="true"></div>
   <div class="landing-inner">
-    <h1>Our Thing 💛</h1>
-    <p class="landing-saying" id="landingSaying"></p>
+    <svg class="landing-logo" viewBox="0 0 100 92" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#ffffff" d="M50 86 C22 62, 4 44, 4 26 C4 12 14 3 27 3 C37 3 46 9 50 19 C54 9 63 3 73 3 C86 3 96 12 96 26 C96 44 78 62 50 86 Z"/>
+    </svg>
+    <h1>Our Thing</h1>
+    <p class="landing-names">AIDAN &nbsp;🤍&nbsp; BRIDGET</p>
+    <div class="landing-quote"><p id="landingSaying"></p></div>
     <p class="landing-hint">tap anywhere to come in</p>
   </div>
 </div>
@@ -427,6 +445,19 @@ function boot(){
   const needsQuiz = isIOS() && !onboardingDone; // quiz only on first open on an iOS device
 
   document.getElementById('landingSaying').textContent = `“${nextSaying()}”`;
+
+  // drifting hearts behind the title; negative delays start them mid-flight
+  const heartsBox = document.querySelector('.landing-hearts');
+  const heartEmo = ['💛','🤍','✨'];
+  for (let i = 0; i < 14; i++){
+    const s = document.createElement('span');
+    s.textContent = heartEmo[i % heartEmo.length];
+    s.style.left = (Math.random()*96) + '%';
+    s.style.fontSize = (12 + Math.random()*18) + 'px';
+    s.style.animationDuration = (7 + Math.random()*9) + 's';
+    s.style.animationDelay = (-Math.random()*14) + 's';
+    heartsBox.appendChild(s);
+  }
 
   const landing = document.getElementById('landingOverlay');
   let tappedWhileLoading = false;
