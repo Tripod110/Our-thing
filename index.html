@@ -36,12 +36,18 @@
   .hidden{display:none !important;}
   .center-screen{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
 
-  /* Buttons */
+  /* Buttons — springy press feedback everywhere */
+  .btn, .quiz-opt, .name-choice button, .swatch, .del-btn, .mini-shuffle{
+    transition:transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s, border-color .18s;
+  }
   .btn{ background:var(--accent); color:#fff; border:none; border-radius:14px; padding:14px 22px; font-size:16px; font-weight:600; box-shadow:var(--shadow); }
-  .btn:active{transform:scale(.97);}
+  .btn:active{transform:scale(.93);}
   .btn.secondary{background:transparent; color:var(--accent); border:2px solid var(--accent);}
   .btn.ghost{background:transparent; color:var(--sub); border:none; box-shadow:none; text-decoration:underline;}
   .btn-block{width:100%;}
+  .quiz-opt:active, .name-choice button:active{transform:scale(.96);}
+  .swatch:active{transform:scale(1.25);}
+  input[type=range]{accent-color:var(--accent);}
 
   /* Landing */
   #landingOverlay{position:fixed; inset:0; z-index:120; background:linear-gradient(160deg, var(--accent), var(--accent2), var(--accent)); background-size:250% 250%; animation:gradientShift 9s ease-in-out infinite; display:flex; align-items:center; justify-content:center; text-align:center; padding:24px; cursor:pointer; transition:opacity .5s; overflow:hidden;}
@@ -100,16 +106,30 @@
   #settingsClose{background:none; border:none; font-size:18px; color:var(--sub); padding:4px 8px;}
   main{padding:16px 16px calc(110px + env(safe-area-inset-bottom)); max-width:640px; margin:0 auto;}
   nav.tabs{position:fixed; bottom:0; left:0; right:0; z-index:20; display:flex; justify-content:space-around; padding:6px 4px calc(6px + env(safe-area-inset-bottom)); background:var(--card); border-top:1px solid var(--line); box-shadow:0 -4px 16px rgba(0,0,0,.06);}
-  nav.tabs button{flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; background:transparent; border:none; padding:4px 2px; color:var(--sub); font-size:10px; font-weight:600; white-space:nowrap;}
-  nav.tabs button .ticon{font-size:20px; line-height:1.1;}
-  nav.tabs button.active{color:var(--accent);}
+  nav.tabs button{flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; background:transparent; border:none; padding:4px 2px; border-radius:14px; color:var(--sub); font-size:10px; font-weight:600; white-space:nowrap;}
+  nav.tabs button .ticon{font-size:20px; line-height:1.1; transition:transform .22s cubic-bezier(.34,1.56,.64,1);}
+  nav.tabs button.active{color:var(--accent); background:var(--bg);}
+  nav.tabs button.active .ticon{transform:scale(1.18) translateY(-1px);}
+  nav.tabs button:active .ticon{transform:scale(1.3);}
 
   .card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; margin-bottom:14px;}
+
+  /* content pops in on tab switches only — background syncs re-render in place, calmly */
+  @keyframes cardIn{from{opacity:0; transform:translateY(12px) scale(.98);}to{opacity:1; transform:none;}}
+  #main.tab-anim > *{animation:cardIn .32s cubic-bezier(.22,1,.36,1) both;}
+  #main.tab-anim > *:nth-child(2){animation-delay:.05s;}
+  #main.tab-anim > *:nth-child(3){animation-delay:.1s;}
+  #main.tab-anim > *:nth-child(4){animation-delay:.15s;}
+  #main.tab-anim > *:nth-child(5){animation-delay:.2s;}
+  #main.tab-anim > *:nth-child(n+6){animation-delay:.25s;}
+  #main.tab-anim .progress i{transform-origin:left; animation:growBar .8s cubic-bezier(.22,1,.36,1) both;}
+  @keyframes growBar{from{transform:scaleX(0);}}
   .row{display:flex; gap:10px; align-items:center;}
   .row-between{display:flex; justify-content:space-between; align-items:center;}
 
   /* Thumbnail cards for watchlist/recipes */
-  .thumb-card{display:flex; gap:12px; background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:10px; margin-bottom:12px;}
+  .thumb-card{display:flex; gap:12px; background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:10px; margin-bottom:12px; transition:transform .18s cubic-bezier(.34,1.56,.64,1);}
+  .thumb-card:active{transform:scale(.98);}
   .thumb-card img.thumb{width:64px; height:96px; object-fit:cover; border-radius:10px; background:var(--line); flex-shrink:0;}
   .thumb-card .thumb-ph{width:64px; height:96px; border-radius:10px; background:var(--line); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;}
   .thumb-body{flex:1; min-width:0;}
@@ -141,7 +161,8 @@
 
   /* Home: tonight's picks + progress */
   .duo{display:flex; gap:12px; margin-bottom:14px;}
-  .mini-card{flex:1; min-width:0; background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:12px; cursor:pointer;}
+  .mini-card{flex:1; min-width:0; background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:12px; cursor:pointer; transition:transform .18s cubic-bezier(.34,1.56,.64,1);}
+  .mini-card:active{transform:scale(.95);}
   .mini-label{font-size:11px; letter-spacing:1px; color:var(--sub); font-weight:700; margin-bottom:8px;}
   .mini-thumb{width:100%; height:110px; object-fit:cover; border-radius:10px; margin-bottom:8px; background:var(--line); display:block;}
   .mini-thumb-ph{width:100%; height:110px; border-radius:10px; background:var(--line); display:flex; align-items:center; justify-content:center; font-size:30px; margin-bottom:8px;}
@@ -490,9 +511,9 @@ document.getElementById('jkBtn').onclick = ()=>{
   renderQuiz();
 };
 
-function throwConfetti(){
+function throwConfetti(count = 44){
   const emo = ['💛','💖','✨','🎉','🌸'];
-  for (let i = 0; i < 44; i++){
+  for (let i = 0; i < count; i++){
     const s = document.createElement('span');
     s.className = 'confetti-piece';
     s.textContent = emo[i % emo.length];
@@ -622,9 +643,12 @@ document.getElementById('tabs').addEventListener('click', (e)=>{
 });
 
 /* ============ RENDER ROOT ============ */
+let lastRenderedTab = null;
 function render(){
   renderHangoutSub();
   const main = document.getElementById('main');
+  main.classList.toggle('tab-anim', activeTab !== lastRenderedTab); // pop in on tab change, stay calm on background syncs
+  lastRenderedTab = activeTab;
   if (activeTab === 'home') main.innerHTML = renderHome();
   if (activeTab === 'watchlist') main.innerHTML = renderRatedList('watchlist', '🎬', 'a movie or show');
   if (activeTab === 'recipes') main.innerHTML = renderRecipes();
@@ -1060,6 +1084,7 @@ function bindMainEvents(){
     }
     if (action === 'logHangout') {
       await save({ lastHangout: new Date().toISOString() });
+      throwConfetti(18);
       render();
     }
     if (action === 'findPoster') {
